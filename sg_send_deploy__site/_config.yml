@@ -1,0 +1,12 @@
+title: SG/Send Deploy Documentation
+description: Infrastructure management for SGraph Send ephemeral data rooms
+
+plugins:
+  - jekyll-last-modified-at
+
+last-modified-at:
+  date-format: '%Y-%m-%d %H:%M'
+
+exclude:
+  - Gemfile
+  - Gemfile.lock

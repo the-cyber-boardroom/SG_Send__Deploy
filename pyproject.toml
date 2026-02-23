@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "sg-send-deploy"
+version = "v0.1.0"
+description = "Deployment and infrastructure management for SGraph Send ephemeral data rooms"
+authors = ["The Cyber Boardroom"]
+readme = "README.md"
+packages = [{include = "sg_send_deploy"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+osbot-utils = "*"
+osbot-aws = "*"
+osbot-fast-api = "*"
+osbot-fast-api-serverless = "*"
+paramiko = "*"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0"
+pytest-asyncio = "^0.25"
+httpx = "^0.27"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

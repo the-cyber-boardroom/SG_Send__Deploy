@@ -1,0 +1,5 @@
+osbot-utils
+osbot-aws
+osbot-fast-api
+osbot-fast-api-serverless
+paramiko
