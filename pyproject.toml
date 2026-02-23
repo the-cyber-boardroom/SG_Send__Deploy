@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sg-send-deploy"
-version = "v0.1.2"
+version = "v0.1.3"
 description = "Deployment and infrastructure management for SGraph Send ephemeral data rooms"
 authors = ["The Cyber Boardroom"]
 readme = "README.md"
