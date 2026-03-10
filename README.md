@@ -1,6 +1,6 @@
 # SG_Send__Deploy
 
-![release-v0.1.7](https://img.shields.io/badge/release-v0.1.0-blue)
+![release-v0.1.8](https://img.shields.io/badge/release-v0.1.0-blue)
 
 Infrastructure management and ephemeral deployment for SGraph Send data rooms.
 
