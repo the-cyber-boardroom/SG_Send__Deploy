@@ -1,6 +1,7 @@
 import json
 import os
 import time
+import uuid
 
 from sg_send_deploy.workflows.schemas.Schema__EC2__LLM__Response import Schema__EC2__LLM__Response
 from sg_send_deploy.workflows.schemas.Schema__QA__Result         import Schema__QA__Result
@@ -10,26 +11,27 @@ class Operation__EC2__Ephemeral__LLM:
     """Ephemeral EC2 + Ollama LLM operation.
 
     Launches an EC2 instance with pre-baked Ollama AMI,
-    opens an SSH tunnel, runs batch QA checks, then cleans up.
+    creates an ephemeral key pair, scopes SSH ingress to runner IP,
+    opens an SSH tunnel, runs batch QA checks, then cleans up everything.
 
-    Uses osbot-aws EC2/EC2_Instance for AWS operations.
-    Uses osbot-utils SSH for SSH tunnel and remote commands.
+    Uses EC2_Provider abstraction (real AWS or twin for tests).
     Ollama client is injected (real or surrogate for tests).
-    EC2 provider is injected (real or twin for tests).
     """
 
     def __init__(self, ollama_client  = None ,
                        ec2_provider   = None ,
-                       audit_trail    = None ):
-        self.ollama_client  = ollama_client
-        self.ec2_provider   = ec2_provider
-        self.audit_trail    = audit_trail
-        self.instance_id    = ''
-        self.key_pair_id    = ''
-        self.key_path       = ''
-        self.runner_ip      = ''
-        self.sg_id          = ''
-        self.tunnel         = None
+                       audit_trail    = None ,
+                       security_group_id: str = '' ):
+        self.ollama_client     = ollama_client
+        self.ec2_provider      = ec2_provider
+        self.audit_trail       = audit_trail
+        self.security_group_id = security_group_id
+        self.instance_id       = ''
+        self.key_pair_id       = ''
+        self.key_path          = ''
+        self.runner_ip         = ''
+        self.ingress_cidr      = ''
+        self.tunnel            = None
 
     def execute(self, ami_id        : str  = ''           ,
                       instance_type : str  = 'c7g.xlarge' ,
@@ -44,13 +46,18 @@ class Operation__EC2__Ephemeral__LLM:
         response.instance_type = instance_type
 
         start_time = time.time()
+        run_id     = uuid.uuid4().hex[:8]
 
         try:
             self.runner_ip = runner_ip
 
-            self._launch(ami_id        = ami_id        ,
-                         instance_type = instance_type ,
-                         spot_instance = spot_instance )
+            self._create_key_pair(run_id=run_id)
+            self._authorize_ingress(runner_ip=runner_ip)
+
+            self._launch(ami_id           = ami_id        ,
+                         instance_type    = instance_type ,
+                         spot_instance    = spot_instance ,
+                         run_id           = run_id        )
 
             response.instance_id    = self.instance_id
             response.spot_fulfilled = True
@@ -72,6 +79,7 @@ class Operation__EC2__Ephemeral__LLM:
                                    instance_type = instance_type        ,
                                    model         = model                ,
                                    checks_count  = len(checks)          ,
+                                   run_id        = run_id               ,
                                    success       = True                 ))
 
         except Exception as e:
@@ -83,6 +91,7 @@ class Operation__EC2__Ephemeral__LLM:
                     action  = 'EC2_LLM_EXECUTE_FAILED'                  ,
                     admin   = admin                                     ,
                     details = dict(instance_id = self.instance_id       ,
+                                   run_id      = run_id                 ,
                                    error       = str(e)                 ))
 
         finally:
@@ -93,11 +102,32 @@ class Operation__EC2__Ephemeral__LLM:
 
         return response.json()
 
-    def _launch(self, ami_id: str, instance_type: str, spot_instance: bool):
-        result = self.ec2_provider.run_instances(
-            instance_type = instance_type ,
-            image_id      = ami_id        )
+    def _create_key_pair(self, run_id: str):
+        key_name = f'sgraph-qa-{run_id}'
+        result   = self.ec2_provider.key_pair_create(key_name=key_name, target_folder='/tmp')
+        self.key_pair_id = result.get('key_pair_id', '')
+        self.key_path    = result.get('key_path'   , '')
+
+    def _authorize_ingress(self, runner_ip: str):
+        if runner_ip and self.security_group_id:
+            self.ingress_cidr = f'{runner_ip}/32'
+            self.ec2_provider.security_group_authorize_ingress(
+                group_id = self.security_group_id ,
+                port     = 22                     ,
+                cidr_ip  = self.ingress_cidr      )
+
+    def _launch(self, ami_id: str, instance_type: str, spot_instance: bool, run_id: str):
+        key_name = f'sgraph-qa-{run_id}'
+        result   = self.ec2_provider.run_instances(
+            instance_type     = instance_type          ,
+            image_id          = ami_id                  ,
+            key_name          = key_name                ,
+            security_group_id = self.security_group_id  ,
+            spot_instance     = spot_instance           ,
+            tags              = dict(RunId=run_id, Purpose='sgraph-qa'))
         self.instance_id = result.get('instance_id', '')
+
+        self.ec2_provider.wait_for_instance_running(instance_id=self.instance_id)
 
     def _verify_ollama(self, model: str):
         if not self.ollama_client.is_alive():
@@ -157,5 +187,26 @@ class Operation__EC2__Ephemeral__LLM:
         if self.instance_id and self.ec2_provider:
             try:
                 self.ec2_provider.terminate_instance(instance_id=self.instance_id)
+            except Exception:
+                pass
+
+        if self.key_pair_id and self.ec2_provider:
+            try:
+                self.ec2_provider.key_pair_delete(key_pair_id=self.key_pair_id)
+            except Exception:
+                pass
+
+        if self.key_path and os.path.exists(self.key_path):
+            try:
+                os.unlink(self.key_path)
+            except Exception:
+                pass
+
+        if self.ingress_cidr and self.security_group_id and self.ec2_provider:
+            try:
+                self.ec2_provider.security_group_revoke_ingress(
+                    group_id = self.security_group_id ,
+                    port     = 22                     ,
+                    cidr_ip  = self.ingress_cidr      )
             except Exception:
                 pass
