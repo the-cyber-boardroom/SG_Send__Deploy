@@ -4,7 +4,10 @@ version = "v0.1.7"
 description = "Deployment and infrastructure management for SGraph Send ephemeral data rooms"
 authors = ["The Cyber Boardroom"]
 readme = "README.md"
-packages = [{include = "sg_send_deploy"}]
+packages = [
+    {include = "sg_send_deploy"},
+    {include = "sg_send_deploy__ui__admin"},
+]
 
 [tool.poetry.dependencies]
 python = "^3.12"

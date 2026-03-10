@@ -8,7 +8,8 @@ ROUTES_PATHS__EC2 = [f'/{TAG__ROUTES_EC2}/instances'                       ,
                      f'/{TAG__ROUTES_EC2}/instances/{{instance_id}}'       ,
                      f'/{TAG__ROUTES_EC2}/instances/{{instance_id}}/start' ,
                      f'/{TAG__ROUTES_EC2}/instances/{{instance_id}}/stop'  ,
-                     f'/{TAG__ROUTES_EC2}/audit-log'                       ]
+                     f'/{TAG__ROUTES_EC2}/audit-log'                       ,
+                     f'/{TAG__ROUTES_EC2}/budget'                          ]
 
 
 class Routes__EC2_Instances(Fast_API__Routes):
@@ -43,6 +44,9 @@ class Routes__EC2_Instances(Fast_API__Routes):
     def audit_log(self) -> list:                                              # GET /ec2/audit-log
         return self.service_instances.get_audit_log()
 
+    def budget(self) -> dict:                                                   # GET /ec2/budget
+        return self.service_instances.get_budget_status()
+
     def setup_routes(self):
         self.add_route_get   (self.instances             )
         self.add_route_get   (self.instances__instance_id)
@@ -51,4 +55,5 @@ class Routes__EC2_Instances(Fast_API__Routes):
         self.add_route_post  (self.start__instance_id    )
         self.add_route_post  (self.stop__instance_id     )
         self.add_route_get   (self.audit_log             )
+        self.add_route_get   (self.budget                )
         return self

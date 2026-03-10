@@ -59,7 +59,8 @@ class Test__Service__EC2_Instances__With_Twins(TestCase):
         fleet    = Type__Twin__EC2__Fleet()
         provider = EC2_Provider__Twin(fleet=fleet)
         config   = EC2_Budget_Config()
-        config.max_instances = 2
+        config.max_instances  = 2
+        config.enforce_limits = True
         budget   = Service__EC2_Budget(config=config)
         service  = Service__EC2_Instances(ec2_provider=provider, budget_service=budget)
 

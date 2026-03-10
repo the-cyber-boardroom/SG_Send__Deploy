@@ -156,3 +156,7 @@ class Service__EC2_Instances:
 
     def get_audit_log(self) -> list:
         return [entry.json() for entry in self.audit_trail.get_entries()]
+
+    def get_budget_status(self) -> dict:
+        running = self.list_running()
+        return self.budget_service.estimate_daily_cost(running)
