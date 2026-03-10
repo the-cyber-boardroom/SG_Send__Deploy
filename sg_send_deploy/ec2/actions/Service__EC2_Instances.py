@@ -4,16 +4,20 @@ from sg_send_deploy.utils.Audit_Trail               import Audit_Trail
 
 
 class Service__EC2_Instances:
-    def __init__(self, budget_service=None, audit_trail=None):
+    def __init__(self, budget_service=None, audit_trail=None, ec2_provider=None):
         self.budget_service = budget_service or Service__EC2_Budget()
         self.audit_trail    = audit_trail    or Audit_Trail()
+        self.ec2_provider   = ec2_provider   or self._default_provider()
+
+    def _default_provider(self):
+        from sg_send_deploy.ec2.providers.EC2_Provider__AWS import EC2_Provider__AWS
+        return EC2_Provider__AWS()
 
     def create(self, instance_type: str = 't3.micro',
                      data_room_id : str = ''         ,
                      image_id     : str = ''         ,
                      key_name     : str = ''         ,
                      admin        : str = ''         ) -> dict:
-        # Budget check before creating
         running = self.list_running()
         budget_check = self.budget_service.check_can_create(
             current_count = len(running)  ,
@@ -21,16 +25,13 @@ class Service__EC2_Instances:
         if not budget_check['allowed']:
             return dict(status='error', message=budget_check['message'])
 
-        # Create via osbot-aws
         try:
-            from osbot_aws.aws.ec2.EC2 import EC2
-            ec2 = EC2()
-            result = ec2.instance_create(image_id      = image_id      ,
-                                         instance_type = instance_type ,
-                                         key_name      = key_name      )
+            result = self.ec2_provider.run_instances(
+                instance_type = instance_type ,
+                image_id      = image_id      ,
+                key_name      = key_name      )
             instance_id = result.get('instance_id', '')
 
-            # Audit log
             self.audit_trail.record(
                 action  = 'EC2_CREATE'                                            ,
                 admin   = admin                                                   ,
@@ -55,9 +56,7 @@ class Service__EC2_Instances:
 
     def list_running(self, admin: str = '') -> list:
         try:
-            from osbot_aws.aws.ec2.EC2 import EC2
-            ec2 = EC2()
-            instances = ec2.instances_details()
+            instances = self.ec2_provider.list_instances()
             running = []
             for instance in instances:
                 state = instance.get('state', {})
@@ -81,10 +80,8 @@ class Service__EC2_Instances:
 
     def get_instance(self, instance_id: str, admin: str = '') -> dict:
         try:
-            from osbot_aws.aws.ec2.EC2 import EC2
-            ec2 = EC2()
-            details = ec2.instance_details(instance_id=instance_id)
-            if details:
+            details = self.ec2_provider.describe_instance(instance_id=instance_id)
+            if details and details.get('status') != 'error':
                 state = details.get('state', {})
                 if isinstance(state, dict):
                     state_name = state.get('Name', '')
@@ -104,9 +101,7 @@ class Service__EC2_Instances:
 
     def terminate(self, instance_id: str, admin: str = '') -> dict:
         try:
-            from osbot_aws.aws.ec2.EC2 import EC2
-            ec2 = EC2()
-            result = ec2.instance_terminate(instance_id=instance_id)
+            result = self.ec2_provider.terminate_instance(instance_id=instance_id)
 
             self.audit_trail.record(
                 action  = 'EC2_TERMINATE'                               ,
@@ -126,9 +121,7 @@ class Service__EC2_Instances:
 
     def stop(self, instance_id: str, admin: str = '') -> dict:
         try:
-            from osbot_aws.aws.ec2.EC2 import EC2
-            ec2 = EC2()
-            result = ec2.instance_stop(instance_id=instance_id)
+            result = self.ec2_provider.stop_instance(instance_id=instance_id)
 
             self.audit_trail.record(
                 action  = 'EC2_STOP'                                    ,
@@ -143,16 +136,12 @@ class Service__EC2_Instances:
 
     def start(self, instance_id: str, admin: str = '') -> dict:
         try:
-            from osbot_aws.aws.ec2.EC2 import EC2
-            ec2 = EC2()
-
-            # Budget check before starting
             running = self.list_running()
             budget_check = self.budget_service.check_instance_limit(len(running))
             if not budget_check['allowed']:
                 return dict(status='error', message=budget_check['message'])
 
-            result = ec2.instance_start(instance_id=instance_id)
+            result = self.ec2_provider.start_instance(instance_id=instance_id)
 
             self.audit_trail.record(
                 action  = 'EC2_START'                                   ,
