@@ -11,11 +11,12 @@ from sg_send_deploy.twins.aws.ec2.Type__Twin__EC2__Fleet  import Type__Twin__EC2
 from sg_send_deploy.utils.Audit_Trail                     import Audit_Trail
 
 
-def create_test_app(max_instances=5):
+def create_test_app(max_instances=5, enforce_limits=False):
     fleet    = Type__Twin__EC2__Fleet()
     provider = EC2_Provider__Twin(fleet=fleet)
     config   = EC2_Budget_Config()
-    config.max_instances = max_instances
+    config.max_instances  = max_instances
+    config.enforce_limits = enforce_limits
     budget   = Service__EC2_Budget(config=config)
     trail    = Audit_Trail()
     service  = Service__EC2_Instances(ec2_provider   = provider ,
@@ -134,7 +135,7 @@ class Test__Routes__EC2_Instances__With_Twins(TestCase):
         assert entries[0]['action'] == 'EC2_CREATE'
 
     def test_budget_limit__enforced_via_api(self):
-        client, _, _ = create_test_app(max_instances=2)
+        client, _, _ = create_test_app(max_instances=2, enforce_limits=True)
 
         client.post('/ec2/create-instance', params={
             'instance_type': 't3.micro', 'image_id': 'ami-001'})
@@ -150,7 +151,7 @@ class Test__Routes__EC2_Instances__With_Twins(TestCase):
         assert 'limit' in data['message'].lower()
 
     def test_instance_type__rejected_via_api(self):
-        client, _, _ = create_test_app()
+        client, _, _ = create_test_app(enforce_limits=True)
 
         resp = client.post('/ec2/create-instance', params={
             'instance_type': 'p3.2xlarge' ,
@@ -180,3 +181,18 @@ class Test__Routes__EC2_Instances__With_Twins(TestCase):
         assert 'EC2_STOP'      in actions
         assert 'EC2_START'     in actions
         assert 'EC2_TERMINATE' in actions
+
+    def test_get_budget__returns_cost_estimate(self):
+        client, _, _ = create_test_app()
+
+        client.post('/ec2/create-instance', params={
+            'instance_type': 't3.micro' ,
+            'image_id'     : 'ami-001'  })
+
+        response = client.get('/ec2/budget')
+        assert response.status_code == 200
+        data = response.json()
+        assert data['instance_count']  == 1
+        assert data['hourly_total']    >  0
+        assert data['daily_estimate']  >  0
+        assert data['enforced']        is False

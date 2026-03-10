@@ -9,6 +9,7 @@ jobs:
   deploy-main:
     uses: ./.github/workflows/ci-pipeline.yml
     with:
+      target_deploy       : 'qa'
       git_branch          : 'main'
       release_type        : 'major'
       should_increment_tag: true

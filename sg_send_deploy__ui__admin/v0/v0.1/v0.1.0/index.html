@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SG/Send Deploy</title>
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+    <admin-shell>
+        <ec2-instances data-panel="ec2"    ></ec2-instances>
+        <system-info   data-panel="system"  style="display:none"></system-info>
+    </admin-shell>
+
+    <script src="js/admin-api.js"></script>
+    <script src="components/admin-shell/admin-shell.js"></script>
+    <script src="components/ec2-instances/ec2-instances.js"></script>
+    <script src="components/system-info/system-info.js"></script>
+</body>
+</html>

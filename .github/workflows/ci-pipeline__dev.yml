@@ -9,6 +9,7 @@ jobs:
   deploy-dev:
     uses: ./.github/workflows/ci-pipeline.yml
     with:
+      target_deploy       : 'dev'
       git_branch          : 'dev'
       release_type        : 'minor'
       should_increment_tag: true
