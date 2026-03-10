@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SG/Send - Starting Data Room</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0e17;
+            color: #e0e6ed;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            text-align: center;
+            max-width: 480px;
+            padding: 2rem;
+        }
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #60a5fa;
+            margin-bottom: 2rem;
+            letter-spacing: 0.05em;
+        }
+        h1 {
+            font-size: 1.25rem;
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+        }
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid #1e293b;
+            border-top-color: #60a5fa;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .status-text {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        .elapsed {
+            color: #475569;
+            font-size: 0.8rem;
+        }
+        .error {
+            color: #f87171;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">SG / Send</div>
+        <div class="spinner" id="spinner"></div>
+        <h1>Starting your data room</h1>
+        <div class="status-text" id="status-text">Checking instance status...</div>
+        <div class="elapsed" id="elapsed"></div>
+        <div class="error" id="error"></div>
+    </div>
+
+    <script>
+        (function() {
+            var startTime  = Date.now();
+            var statusEl   = document.getElementById('status-text');
+            var elapsedEl  = document.getElementById('elapsed');
+            var errorEl    = document.getElementById('error');
+            var pollMs     = 3000;
+            var maxRetries = 200;
+            var retries    = 0;
+
+            function formatElapsed() {
+                var seconds = Math.floor((Date.now() - startTime) / 1000);
+                var mins = Math.floor(seconds / 60);
+                var secs = seconds % 60;
+                return mins > 0
+                    ? mins + 'm ' + secs + 's'
+                    : secs + 's';
+            }
+
+            function poll() {
+                retries++;
+                elapsedEl.textContent = 'Elapsed: ' + formatElapsed();
+
+                if (retries > maxRetries) {
+                    statusEl.textContent = 'Timed out waiting for instance.';
+                    errorEl.textContent  = 'Please try refreshing the page.';
+                    errorEl.style.display = 'block';
+                    return;
+                }
+
+                fetch('/api/deploy/status')
+                    .then(function(resp) { return resp.json(); })
+                    .then(function(data) {
+                        if (data.healthy && data.endpoint) {
+                            statusEl.textContent = 'Data room is ready! Redirecting...';
+                            window.location.href = data.endpoint;
+                            return;
+                        }
+
+                        if (data.status === 'running') {
+                            statusEl.textContent = 'Instance running, waiting for services...';
+                        } else if (data.status === 'pending') {
+                            statusEl.textContent = 'Instance is booting...';
+                        } else if (data.status === 'stopped' || data.status === 'stopping') {
+                            statusEl.textContent = 'Instance is starting up...';
+                        } else if (data.status === 'error') {
+                            statusEl.textContent = 'Error: ' + (data.message || 'Unknown');
+                        } else {
+                            statusEl.textContent = 'Status: ' + (data.status || 'unknown');
+                        }
+
+                        setTimeout(poll, pollMs);
+                    })
+                    .catch(function(err) {
+                        statusEl.textContent = 'Checking status...';
+                        setTimeout(poll, pollMs);
+                    });
+            }
+
+            poll();
+        })();
+    </script>
+</body>
+</html>

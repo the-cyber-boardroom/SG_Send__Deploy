@@ -4,6 +4,7 @@ from osbot_fast_api_serverless.fast_api.routes.Routes__Info     import Routes__I
 
 from sg_send_deploy.ec2.actions.Service__EC2_Instances               import Service__EC2_Instances
 from sg_send_deploy.ec2.routes.Routes__EC2_Instances                 import Routes__EC2_Instances
+from sg_send_deploy.server.routes.Routes__Status                     import Routes__Status
 from sg_send_deploy.workflows.actions.Operation__EC2__Ephemeral__LLM import Operation__EC2__Ephemeral__LLM
 from sg_send_deploy.workflows.routes.Routes__Workflows               import Routes__Workflows
 from sg_send_deploy.utils.Version                                    import version__sg_send_deploy
@@ -39,6 +40,8 @@ class Fast_API__SG_Send__Deploy(Serverless__Fast_API):
         self.add_routes(Routes__Set_Cookie                                    )
         self.add_routes(Routes__EC2_Instances,
                         service_instances = self.service_instances            )
+        self.add_routes(Routes__Status,
+                        ec2_provider = self.service_instances.ec2_provider    )
         self.add_routes(Routes__Workflows,
                         operation = self.llm_operation                        )
 

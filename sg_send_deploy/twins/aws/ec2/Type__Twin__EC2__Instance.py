@@ -32,11 +32,14 @@ class Type__Twin__EC2__Instance(Type__Twin__AWS):
         instance_type = kwargs.get('instance_type', 't3.micro')
         image_id      = kwargs.get('image_id'     , ''         )
         key_name      = kwargs.get('key_name'     , ''         )
+        tags          = kwargs.get('tags'          , None       )
 
         self.config.instance_id   = instance_id
         self.config.instance_type = instance_type
         self.config.image_id      = image_id
         self.config.key_name      = key_name
+        if tags is not None:
+            self.config.tags      = tags
 
         self.state.state_name  = 'pending'
         self.state.state_code  = EC2_STATE_CODES['pending']
