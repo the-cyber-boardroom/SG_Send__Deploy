@@ -15,7 +15,6 @@ osbot-utils = "*"
 osbot-aws = "*"
 osbot-fast-api = "*"
 osbot-fast-api-serverless = "*"
-paramiko = "*"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0"
