@@ -19,9 +19,9 @@ class EC2_Provider__AWS(EC2_Provider):
             kwargs['key_name'] = key_name
         if security_group_id:
             kwargs['security_group_id'] = security_group_id
-        result = ec2.instance_create(**kwargs)
-        return dict(instance_id = result.get('instance_id', ''),
-                    public_ip   = result.get('public_ip'  , ''))
+        instance_id = ec2.instance_create(**kwargs)
+        return dict(instance_id = instance_id or '',
+                    public_ip   = ''               )
 
     def describe_instance(self, instance_id: str) -> dict:
         from osbot_aws.aws.ec2.EC2 import EC2
