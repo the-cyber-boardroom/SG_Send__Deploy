@@ -9,7 +9,7 @@
 # The server starts on http://localhost:10062
 # Docs at http://localhost:10062/docs
 
-PORT=10062
+PORT=10065
 
 # Load environment variables from .local-server.env if it exists
 if [ -f .local-server.env ]; then
