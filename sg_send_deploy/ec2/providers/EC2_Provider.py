@@ -29,6 +29,18 @@ class EC2_Provider:
     def key_pair_delete(self, key_pair_id: str) -> dict:
         raise NotImplementedError()
 
+    def key_pairs_list(self) -> list:
+        raise NotImplementedError()
+
+    def security_group_create(self, group_name: str, description: str, vpc_id: str = '') -> dict:
+        raise NotImplementedError()
+
+    def security_group_delete(self, group_id: str) -> dict:
+        raise NotImplementedError()
+
+    def security_groups_list(self) -> list:
+        raise NotImplementedError()
+
     def security_group_authorize_ingress(self, group_id: str, port: int, cidr_ip: str) -> dict:
         raise NotImplementedError()
 

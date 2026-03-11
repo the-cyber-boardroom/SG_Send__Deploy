@@ -8,13 +8,17 @@
 </head>
 <body>
     <admin-shell>
-        <ec2-instances data-panel="ec2"    ></ec2-instances>
-        <system-info   data-panel="system"  style="display:none"></system-info>
+        <ec2-instances       data-panel="ec2"       ></ec2-instances>
+        <ec2-key-pairs       data-panel="keys"       style="display:none"></ec2-key-pairs>
+        <ec2-security-groups data-panel="security"   style="display:none"></ec2-security-groups>
+        <system-info         data-panel="system"     style="display:none"></system-info>
     </admin-shell>
 
     <script src="js/admin-api.js"></script>
     <script src="components/admin-shell/admin-shell.js"></script>
     <script src="components/ec2-instances/ec2-instances.js"></script>
+    <script src="components/ec2-key-pairs/ec2-key-pairs.js"></script>
+    <script src="components/ec2-security-groups/ec2-security-groups.js"></script>
     <script src="components/system-info/system-info.js"></script>
 </body>
 </html>

@@ -39,6 +39,22 @@ class EC2_Provider__Twin(EC2_Provider):
     def key_pair_delete(self, key_pair_id: str) -> dict:
         return self.fleet.key_pair_delete(key_pair_id=key_pair_id)
 
+    def key_pairs_list(self) -> list:
+        return self.fleet.key_pairs_list() if hasattr(self.fleet, 'key_pairs_list') else []
+
+    def security_group_create(self, group_name: str, description: str, vpc_id: str = '') -> dict:
+        if hasattr(self.fleet, 'security_group_create'):
+            return self.fleet.security_group_create(group_name=group_name, description=description, vpc_id=vpc_id)
+        return dict(status='ok', security_group_id='sg-twin-mock', group_name=group_name)
+
+    def security_group_delete(self, group_id: str) -> dict:
+        if hasattr(self.fleet, 'security_group_delete'):
+            return self.fleet.security_group_delete(group_id=group_id)
+        return dict(status='deleted', group_id=group_id)
+
+    def security_groups_list(self) -> list:
+        return self.fleet.security_groups_list() if hasattr(self.fleet, 'security_groups_list') else []
+
     def security_group_authorize_ingress(self, group_id: str, port: int, cidr_ip: str) -> dict:
         return self.fleet.security_group_authorize_ingress(group_id=group_id, port=port, cidr_ip=cidr_ip)
 
