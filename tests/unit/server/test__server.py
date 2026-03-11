@@ -46,3 +46,22 @@ class Test__Server(TestCase):
         # List should have 1
         resp = client.get('/ec2/instances')
         assert len(resp.json()) == 1
+
+    def test_create_app__ssh_routes_available(self):
+        os.environ.pop('USE_AWS_PROVIDER', None)
+        app    = create_app()
+        client = TestClient(app)
+
+        # SSH connection route works
+        resp = client.get('/ssh/connection')
+        assert resp.status_code == 200
+        assert resp.json()['ready'] is False
+
+        # Configure SSH
+        resp = client.post('/ssh/configure', params={
+            'host': '10.0.1.42', 'key_file': '/tmp/key.pem'})
+        assert resp.json()['status'] == 'configured'
+
+        # Exec whoami via twin
+        resp = client.post('/ssh/exec', params={'command': 'whoami'})
+        assert resp.json()['stdout'] == 'ubuntu'
