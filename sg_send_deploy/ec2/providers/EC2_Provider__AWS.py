@@ -36,17 +36,20 @@ class EC2_Provider__AWS(EC2_Provider):
     def terminate_instance(self, instance_id: str) -> dict:
         from osbot_aws.aws.ec2.EC2 import EC2
         ec2 = EC2()
-        return ec2.instance_terminate(instance_id=instance_id)
+        ec2.instance_terminate(instance_id=instance_id)
+        return dict(status='terminated', instance_id=instance_id)
 
     def stop_instance(self, instance_id: str) -> dict:
         from osbot_aws.aws.ec2.EC2 import EC2
         ec2 = EC2()
-        return ec2.instance_stop(instance_id=instance_id)
+        ec2.instance_stop(instance_id=instance_id)
+        return dict(status='stopping', instance_id=instance_id)
 
     def start_instance(self, instance_id: str) -> dict:
         from osbot_aws.aws.ec2.EC2 import EC2
         ec2 = EC2()
-        return ec2.instance_start(instance_id=instance_id)
+        ec2.instance_start(instance_id=instance_id)
+        return dict(status='starting', instance_id=instance_id)
 
     def key_pair_create(self, key_name: str, target_folder: str = '/tmp') -> dict:
         from osbot_aws.aws.ec2.EC2 import EC2
@@ -54,19 +57,20 @@ class EC2_Provider__AWS(EC2_Provider):
         result = ec2.key_pair_create_to_file(key_name=key_name, target_folder=target_folder)
         return dict(key_pair_id = result.get('key_pair_id', ''),
                     key_name    = key_name                      ,
-                    key_path    = result.get('key_file'   , ''))
+                    key_path    = result.get('path_key_pair', ''))
 
     def key_pair_delete(self, key_pair_id: str) -> dict:
         from osbot_aws.aws.ec2.EC2 import EC2
-        ec2 = EC2()
-        return ec2.key_pair_delete(key_pair_id=key_pair_id)
+        ec2     = EC2()
+        deleted = ec2.key_pair_delete(key_pair_id=key_pair_id)
+        return dict(status='deleted' if deleted else 'failed', key_pair_id=key_pair_id)
 
     def security_group_authorize_ingress(self, group_id: str, port: int, cidr_ip: str) -> dict:
         from osbot_aws.aws.ec2.EC2 import EC2
         ec2 = EC2()
-        return ec2.security_group_authorize_ingress(group_id = group_id ,
-                                                    port     = port     ,
-                                                    cidr_ip  = cidr_ip  )
+        return ec2.security_group_authorize_ingress(security_group_id = group_id ,
+                                                    port              = port     ,
+                                                    cidr_ip           = cidr_ip  )
 
     def security_group_revoke_ingress(self, group_id: str, port: int, cidr_ip: str) -> dict:
         from osbot_aws.aws.ec2.EC2 import EC2

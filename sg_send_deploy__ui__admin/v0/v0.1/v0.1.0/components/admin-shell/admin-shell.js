@@ -1,5 +1,6 @@
 class AdminShell extends HTMLElement {
     connectedCallback() {
+        const children = Array.from(this.childNodes);
         this.innerHTML = `
             <div class="header">
                 <h1>SG/Send Deploy</h1>
@@ -9,10 +10,10 @@ class AdminShell extends HTMLElement {
                     <button onclick="window.open('/docs','_blank')">Swagger</button>
                 </div>
             </div>
-            <div class="panel">
-                <slot></slot>
-            </div>
+            <div class="panel"></div>
         `;
+        const panel = this.querySelector('.panel');
+        children.forEach(child => panel.appendChild(child));
         this.querySelectorAll('.nav button[data-target]').forEach(btn => {
             btn.addEventListener('click', () => this._switchPanel(btn));
         });
