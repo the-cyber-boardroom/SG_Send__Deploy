@@ -1,4 +1,5 @@
 from sg_send_deploy.ec2.actions.Service__EC2_Budget import Service__EC2_Budget
+from sg_send_deploy.ec2.EC2__Defaults               import DEFAULT__IMAGE_ID
 from sg_send_deploy.ec2.schemas.EC2_Instance_Info   import EC2_Instance_Info
 from sg_send_deploy.utils.Audit_Trail               import Audit_Trail
 
@@ -24,6 +25,8 @@ class Service__EC2_Instances:
             instance_type = instance_type )
         if not budget_check['allowed']:
             return dict(status='error', message=budget_check['message'])
+
+        image_id = image_id or DEFAULT__IMAGE_ID
 
         try:
             result = self.ec2_provider.run_instances(
