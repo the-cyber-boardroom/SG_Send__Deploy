@@ -1,33 +1,16 @@
-import hashlib
-import json
-from datetime import datetime, timezone
+from datetime  import datetime, timezone
+from osbot_utils.type_safe.Type_Safe import Type_Safe
 
 
-class EC2_Audit_Entry:
-    def __init__(self, action='', admin='', details=None, prev_hash='', timestamp='', entry_hash=''):
-        self.timestamp  = timestamp or datetime.now(timezone.utc).isoformat()
-        self.action     = action
-        self.admin      = admin
-        self.details    = details or {}
-        self.prev_hash  = prev_hash
-        self.entry_hash = entry_hash
+class EC2_Audit_Entry(Type_Safe):
+    timestamp  : str  = ''
+    action     : str  = ''
+    admin      : str  = ''
+    details    : dict
+    prev_hash  : str  = ''
+    entry_hash : str  = ''
 
-    def compute_hash(self):
-        data = json.dumps({
-            'timestamp' : self.timestamp ,
-            'action'    : self.action    ,
-            'admin'     : self.admin     ,
-            'details'   : self.details   ,
-            'prev_hash' : self.prev_hash ,
-        }, sort_keys=True)
-        self.entry_hash = hashlib.sha256(data.encode()).hexdigest()
-        return self.entry_hash
-
-    def json(self):
-        return dict(
-            timestamp  = self.timestamp  ,
-            action     = self.action     ,
-            admin      = self.admin      ,
-            details    = self.details    ,
-            prev_hash  = self.prev_hash  ,
-            entry_hash = self.entry_hash )
+    def __init__(self, **kwargs):
+        if 'timestamp' not in kwargs or not kwargs['timestamp']:
+            kwargs['timestamp'] = datetime.now(timezone.utc).isoformat()
+        super().__init__(**kwargs)

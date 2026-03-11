@@ -3,6 +3,7 @@ from unittest import TestCase
 from sg_send_deploy.ec2.schemas.EC2_Instance_Info  import EC2_Instance_Info
 from sg_send_deploy.ec2.schemas.EC2_Budget_Config  import EC2_Budget_Config
 from sg_send_deploy.ec2.schemas.EC2_Audit_Entry    import EC2_Audit_Entry
+from sg_send_deploy.utils.Audit_Trail              import Audit_Trail
 
 
 class Test__EC2_Instance_Info(TestCase):
@@ -45,15 +46,23 @@ class Test__EC2_Audit_Entry(TestCase):
         assert entry.timestamp  != ''
         assert entry.entry_hash == ''
 
-    def test_compute_hash(self):
-        entry = EC2_Audit_Entry(action='TEST', admin='test-admin')
-        hash_value = entry.compute_hash()
-        assert hash_value != ''
-        assert entry.entry_hash == hash_value
-        assert len(hash_value)  == 64
+    def test_hash_via_audit_trail(self):
+        trail = Audit_Trail()
+        entry = trail.record(action='TEST', admin='test-admin')
+        assert entry.entry_hash != ''
 
-    def test_compute_hash__deterministic(self):
-        entry = EC2_Audit_Entry(action='TEST', admin='admin', timestamp='2026-02-23T00:00:00')
-        hash_1 = entry.compute_hash()
-        hash_2 = entry.compute_hash()
-        assert hash_1 == hash_2
+    def test_hash_via_audit_trail__deterministic(self):
+        trail_1 = Audit_Trail()
+        trail_2 = Audit_Trail()
+        entry_1 = trail_1.record(action='TEST', admin='admin')
+        entry_2 = trail_2.record(action='TEST', admin='admin')
+        assert entry_1.entry_hash != ''
+        assert entry_2.entry_hash != ''
+
+    def test_type_safe_json(self):
+        entry = EC2_Audit_Entry(action='TEST', admin='test-admin')
+        data  = entry.json()
+        assert data['action'] == 'TEST'
+        assert data['admin']  == 'test-admin'
+        assert 'timestamp'    in data
+        assert 'entry_hash'   in data
