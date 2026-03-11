@@ -59,7 +59,11 @@ class Service__EC2_Instances:
 
     def list_running(self, admin: str = '') -> list:
         try:
-            instances = self.ec2_provider.list_instances()
+            instances_data = self.ec2_provider.list_instances()
+            if isinstance(instances_data, dict):
+                instances = list(instances_data.values())
+            else:
+                instances = instances_data or []
             running = []
             for instance in instances:
                 state = instance.get('state', {})
