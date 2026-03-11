@@ -1,20 +1,16 @@
 import os
 
-from fastapi           import FastAPI
-from starlette.staticfiles  import StaticFiles
-from starlette.responses    import RedirectResponse
-
-from sg_send_deploy.ec2.actions.Service__EC2_Instances import Service__EC2_Instances
-from sg_send_deploy.ec2.actions.Service__EC2_SSH       import Service__EC2_SSH
-from sg_send_deploy.ec2.routes.Routes__EC2_Instances   import Routes__EC2_Instances
-from sg_send_deploy.ec2.routes.Routes__EC2_SSH         import Routes__EC2_SSH
-from sg_send_deploy.server.routes.Routes__Status       import Routes__Status
-from sg_send_deploy.utils.Version                      import version__sg_send_deploy
+from sg_send_deploy.ec2.actions.Service__EC2_Instances             import Service__EC2_Instances
+from sg_send_deploy.ec2.actions.Service__EC2_SSH                   import Service__EC2_SSH
+from sg_send_deploy.ec2.routes.Routes__EC2_SSH                     import Routes__EC2_SSH
+from sg_send_deploy.lambda__deploy.Fast_API__SG_Send__Deploy       import Fast_API__SG_Send__Deploy
 
 
 def create_app():
     """Create the FastAPI app for local development.
 
+    Uses Fast_API__SG_Send__Deploy (extends Serverless__Fast_API)
+    which provides API key middleware, CORS, and standard routes.
     Uses EC2_Provider__Twin by default (no AWS needed).
     Set USE_AWS_PROVIDER=true to use real AWS."""
 
@@ -33,43 +29,16 @@ def create_app():
         ssh_twin     = SSH__Execute__Twin()
         service_ssh  = Service__EC2_SSH(ssh_execute=ssh_twin)
 
-    app = FastAPI(title   = 'SG/Send Deploy'                                                     ,
-                  version = version__sg_send_deploy                                               ,
-                  description = 'Infrastructure management for SGraph Send ephemeral data rooms'  )
+    fast_api = Fast_API__SG_Send__Deploy(service_instances=service)
+    fast_api.setup()
 
-    # EC2 instance routes
-    routes_ec2    = Routes__EC2_Instances(app=app, service_instances=service)
-    routes_ec2.setup()
+    app = fast_api.app()
 
-    # SSH routes
-    routes_ssh    = Routes__EC2_SSH(app=app, service_ssh=service_ssh)
+    # SSH routes (not yet in Fast_API__SG_Send__Deploy)
+    routes_ssh = Routes__EC2_SSH(app=app, service_ssh=service_ssh)
     routes_ssh.setup()
 
-    # Deploy status
-    routes_status = Routes__Status(app=app, ec2_provider=service.ec2_provider)
-    routes_status.setup()
-
-    # Admin UI (static files)
-    _mount_admin_ui(app)
-
     return app
-
-
-def _mount_admin_ui(app):
-    """Mount the admin UI static files at /admin."""
-    try:
-        import sg_send_deploy__ui__admin
-        path_static = sg_send_deploy__ui__admin.path
-
-        app.mount('/admin/static',
-                  StaticFiles(directory=path_static),
-                  name='admin')
-
-        @app.get('/admin')
-        def admin_redirect():
-            return RedirectResponse(url='/admin/static/v0/v0.1/v0.1.0/index.html')
-    except ImportError:
-        pass
 
 
 def run_server():
