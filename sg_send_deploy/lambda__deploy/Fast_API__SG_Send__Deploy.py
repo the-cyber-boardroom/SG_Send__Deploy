@@ -3,7 +3,11 @@ from osbot_fast_api_serverless.fast_api.Serverless__Fast_API    import Serverles
 from osbot_fast_api_serverless.fast_api.routes.Routes__Info     import Routes__Info
 
 from sg_send_deploy.ec2.actions.Service__EC2_Instances               import Service__EC2_Instances
+from sg_send_deploy.ec2.actions.Service__EC2_Key_Pairs               import Service__EC2_Key_Pairs
+from sg_send_deploy.ec2.actions.Service__EC2_Security_Groups         import Service__EC2_Security_Groups
 from sg_send_deploy.ec2.routes.Routes__EC2_Instances                 import Routes__EC2_Instances
+from sg_send_deploy.ec2.routes.Routes__EC2_Key_Pairs                 import Routes__EC2_Key_Pairs
+from sg_send_deploy.ec2.routes.Routes__EC2_Security_Groups           import Routes__EC2_Security_Groups
 from sg_send_deploy.server.routes.Routes__Status                     import Routes__Status
 from sg_send_deploy.workflows.actions.Operation__EC2__Ephemeral__LLM import Operation__EC2__Ephemeral__LLM
 from sg_send_deploy.workflows.routes.Routes__Workflows               import Routes__Workflows
@@ -15,8 +19,10 @@ from sg_send_deploy.lambda__deploy.deploy__config                    import (
 
 class Fast_API__SG_Send__Deploy(Serverless__Fast_API):
 
-    service_instances : Service__EC2_Instances        = None
-    llm_operation     : Operation__EC2__Ephemeral__LLM = None
+    service_instances       : Service__EC2_Instances          = None
+    service_key_pairs       : Service__EC2_Key_Pairs          = None
+    service_security_groups : Service__EC2_Security_Groups    = None
+    llm_operation           : Operation__EC2__Ephemeral__LLM  = None
 
     def setup(self):
         with self.config as _:
@@ -26,6 +32,10 @@ class Fast_API__SG_Send__Deploy(Serverless__Fast_API):
 
         if self.service_instances is None:
             self.service_instances = Service__EC2_Instances()
+        if self.service_key_pairs is None:
+            self.service_key_pairs = Service__EC2_Key_Pairs()
+        if self.service_security_groups is None:
+            self.service_security_groups = Service__EC2_Security_Groups()
 
         if self.llm_operation is None:
             self.llm_operation = Operation__EC2__Ephemeral__LLM(
@@ -40,6 +50,10 @@ class Fast_API__SG_Send__Deploy(Serverless__Fast_API):
         self.add_routes(Routes__Set_Cookie                                    )
         self.add_routes(Routes__EC2_Instances,
                         service_instances = self.service_instances            )
+        self.add_routes(Routes__EC2_Key_Pairs,
+                        service_key_pairs = self.service_key_pairs           )
+        self.add_routes(Routes__EC2_Security_Groups,
+                        service_security_groups = self.service_security_groups)
         self.add_routes(Routes__Status,
                         ec2_provider = self.service_instances.ec2_provider    )
         self.add_routes(Routes__Workflows,
