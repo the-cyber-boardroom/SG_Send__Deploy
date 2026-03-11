@@ -1,18 +1,14 @@
 class EC2Instances extends HTMLElement {
     connectedCallback() {
-        this._refreshInterval = null;
         this._render();
         this.onActivated();
     }
 
     disconnectedCallback() {
-        if (this._refreshInterval) clearInterval(this._refreshInterval);
     }
 
     onActivated() {
         this._loadInstances();
-        if (this._refreshInterval) clearInterval(this._refreshInterval);
-        this._refreshInterval = setInterval(() => this._loadInstances(), 30000);
     }
 
     _render() {
