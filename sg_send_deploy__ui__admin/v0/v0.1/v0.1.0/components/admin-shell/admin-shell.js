@@ -5,7 +5,9 @@ class AdminShell extends HTMLElement {
             <div class="header">
                 <h1>SG/Send Deploy</h1>
                 <div class="nav">
-                    <button class="active" data-target="ec2">Infrastructure</button>
+                    <button class="active" data-target="ec2">Instances</button>
+                    <button data-target="keys">Key Pairs</button>
+                    <button data-target="security">Security Groups</button>
                     <button data-target="system">System</button>
                     <button onclick="window.open('/docs','_blank')">Swagger</button>
                 </div>

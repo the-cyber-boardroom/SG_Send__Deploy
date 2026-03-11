@@ -65,6 +65,43 @@ class EC2_Provider__AWS(EC2_Provider):
         deleted = ec2.key_pair_delete(key_pair_id=key_pair_id)
         return dict(status='deleted' if deleted else 'failed', key_pair_id=key_pair_id)
 
+    def key_pairs_list(self) -> list:
+        from osbot_aws.aws.ec2.EC2 import EC2
+        ec2       = EC2()
+        key_pairs = ec2.key_pairs()
+        return [dict(key_pair_id = kp.get('KeyPairId'  , ''),
+                     key_name    = kp.get('KeyName'    , ''),
+                     key_type    = kp.get('KeyType'    , ''),
+                     created     = str(kp.get('CreateTime', '')))
+                for kp in (key_pairs or [])]
+
+    def security_group_create(self, group_name: str, description: str, vpc_id: str = '') -> dict:
+        from osbot_aws.aws.ec2.EC2 import EC2
+        ec2    = EC2()
+        result = ec2.security_group_create(security_group_name = group_name  ,
+                                           description         = description ,
+                                           vpc_id              = vpc_id or None)
+        data   = result.get('data', {})
+        return dict(status            = result.get('status', 'ok'),
+                    security_group_id = data.get('security_group_id', ''),
+                    group_name        = group_name                       )
+
+    def security_group_delete(self, group_id: str) -> dict:
+        from osbot_aws.aws.ec2.EC2 import EC2
+        ec2     = EC2()
+        deleted = ec2.security_group_delete(security_group_id=group_id)
+        return dict(status='deleted' if deleted else 'failed', group_id=group_id)
+
+    def security_groups_list(self) -> list:
+        from osbot_aws.aws.ec2.EC2 import EC2
+        ec2    = EC2()
+        groups = ec2.security_groups()
+        return [dict(group_id    = sg.get('GroupId'     , ''),
+                     group_name  = sg.get('GroupName'   , ''),
+                     description = sg.get('Description' , ''),
+                     vpc_id      = sg.get('VpcId'       , ''))
+                for sg in (groups or [])]
+
     def security_group_authorize_ingress(self, group_id: str, port: int, cidr_ip: str) -> dict:
         from osbot_aws.aws.ec2.EC2 import EC2
         ec2 = EC2()
