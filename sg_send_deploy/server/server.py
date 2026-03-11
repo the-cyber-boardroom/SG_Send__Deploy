@@ -1,22 +1,30 @@
 import os
 
-from fastapi           import FastAPI
+from fastapi                import FastAPI
+from osbot_utils.utils.Env  import load_dotenv
 from starlette.staticfiles  import StaticFiles
 from starlette.responses    import RedirectResponse
 
-from sg_send_deploy.ec2.actions.Service__EC2_Instances import Service__EC2_Instances
-from sg_send_deploy.ec2.actions.Service__EC2_SSH       import Service__EC2_SSH
-from sg_send_deploy.ec2.routes.Routes__EC2_Instances   import Routes__EC2_Instances
-from sg_send_deploy.ec2.routes.Routes__EC2_SSH         import Routes__EC2_SSH
-from sg_send_deploy.server.routes.Routes__Status       import Routes__Status
-from sg_send_deploy.utils.Version                      import version__sg_send_deploy
+from osbot_fast_api.api.middlewares.Middleware__Check_API_Key   import Middleware__Check_API_Key
+from osbot_fast_api.api.schemas.consts.consts__Fast_API        import (ENV_VAR__FAST_API__AUTH__API_KEY__NAME ,
+                                                                       ENV_VAR__FAST_API__AUTH__API_KEY__VALUE)
+from sg_send_deploy.ec2.actions.Service__EC2_Instances         import Service__EC2_Instances
+from sg_send_deploy.ec2.actions.Service__EC2_SSH               import Service__EC2_SSH
+from sg_send_deploy.ec2.routes.Routes__EC2_Instances           import Routes__EC2_Instances
+from sg_send_deploy.ec2.routes.Routes__EC2_SSH                 import Routes__EC2_SSH
+from sg_send_deploy.server.routes.Routes__Status               import Routes__Status
+from sg_send_deploy.utils.Version                              import version__sg_send_deploy
 
 
 def create_app():
     """Create the FastAPI app for local development.
 
     Uses EC2_Provider__Twin by default (no AWS needed).
-    Set USE_AWS_PROVIDER=true to use real AWS."""
+    Set USE_AWS_PROVIDER=true to use real AWS.
+    API key auth is enabled via FAST_API__AUTH__API_KEY__NAME and
+    FAST_API__AUTH__API_KEY__VALUE environment variables."""
+
+    load_dotenv()
 
     use_aws = os.environ.get('USE_AWS_PROVIDER', '').lower() == 'true'
 
@@ -33,9 +41,15 @@ def create_app():
         ssh_twin     = SSH__Execute__Twin()
         service_ssh  = Service__EC2_SSH(ssh_execute=ssh_twin)
 
-    app = FastAPI(title   = 'SG/Send Deploy'                                                     ,
-                  version = version__sg_send_deploy                                               ,
-                  description = 'Infrastructure management for SGraph Send ephemeral data rooms'  )
+    app = FastAPI(title       = 'SG/Send Deploy'                                                ,
+                  version     = version__sg_send_deploy                                         ,
+                  description = 'Infrastructure management for SGraph Send ephemeral data rooms' )
+
+    # API key middleware — checks header or cookie
+    app.add_middleware(Middleware__Check_API_Key                                 ,
+                       env_var__api_key__name  = ENV_VAR__FAST_API__AUTH__API_KEY__NAME  ,
+                       env_var__api_key__value = ENV_VAR__FAST_API__AUTH__API_KEY__VALUE ,
+                       allow_cors              = True                                   )
 
     # EC2 instance routes
     routes_ec2    = Routes__EC2_Instances(app=app, service_instances=service)
