@@ -13,7 +13,7 @@ class EC2_Budget_Config(Type_Safe):
     daily_budget_usd    : float = 10.0
     idle_timeout_minutes: int   = 30
     max_instance_type   : str   = 't3.medium'
-    enforce_limits      : bool  = False
+    enforce_limits      : bool  = True
 
     def allowed_types(self):
         return ALLOWED_INSTANCE_TYPES
