@@ -24,7 +24,7 @@
     <div id="app">
         <div id="header">SG Local LLM</div>
         <div id="layout">
-            <sg-layout layout='{"type":"row","children":[{"type":"stack","size":0.2,"children":[{"type":"tab","tag":"session-list","title":"Sessions"}]},{"type":"stack","size":0.8,"children":[{"type":"tab","tag":"chat-panel","title":"Chat"}]}]}'>
+            <sg-layout layout='{"type":"row","sizes":[0.2,0.8],"children":[{"type":"stack","tabs":[{"type":"tab","tag":"session-list","title":"Sessions"}],"activeTab":0},{"type":"stack","tabs":[{"type":"tab","tag":"chat-panel","title":"Chat"}],"activeTab":0}]}'>
                 <session-list></session-list>
                 <chat-panel></chat-panel>
             </sg-layout>
