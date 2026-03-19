@@ -1650,9 +1650,13 @@ class SgLayout extends HTMLElement {
      */
     _normaliseTree(node) {
         if (!node) return node;
+        if (!node.id) node.id = uid();
         if (node.type === 'row' || node.type === 'column') {
             node.sizes = normaliseSizes(node.sizes, node.children.length);
             node.children.forEach(c => this._normaliseTree(c));
+        }
+        if (node.type === 'stack') {
+            (node.tabs || []).forEach(t => this._normaliseTree(t));
         }
         return node;
     }
