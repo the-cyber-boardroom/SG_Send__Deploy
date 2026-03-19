@@ -6,7 +6,6 @@
     <title>SG Local LLM</title>
     <link rel="stylesheet" href="/static/core/sg-layout/v0.1.0/sg-layout.css">
     <link rel="stylesheet" href="/static/css/chat.css">
-    <script type="module" src="/static/core/sg-layout/v0.1.0/sg-layout.js"></script>
     <script src="/static/js/llm-api.js"></script>
     <script defer src="/static/components/session-list/session-list.js"></script>
     <script defer src="/static/components/chat-panel/chat-panel.js"></script>
@@ -18,17 +17,33 @@
                      border-bottom: 1px solid var(--color-border);
                      font-size: 15px; font-weight: 600; color: var(--color-text-muted); }
         #layout    { flex: 1; overflow: hidden; }
+        sg-layout  { display: block; width: 100%; height: 100%; }
     </style>
 </head>
 <body>
     <div id="app">
         <div id="header">SG Local LLM</div>
         <div id="layout">
-            <sg-layout layout='{"type":"row","sizes":[0.2,0.8],"children":[{"type":"stack","tabs":[{"type":"tab","tag":"session-list","title":"Sessions"}],"activeTab":0},{"type":"stack","tabs":[{"type":"tab","tag":"chat-panel","title":"Chat"}],"activeTab":0}]}'>
-                <session-list></session-list>
-                <chat-panel></chat-panel>
-            </sg-layout>
+            <sg-layout id="main-layout"></sg-layout>
         </div>
     </div>
+    <script type="module">
+        // Import sg-layout — this calls customElements.define('sg-layout', ...)
+        import '/static/core/sg-layout/v0.1.0/sg-layout.js'
+
+        // Wait for sg-layout to be defined and upgraded, then set layout
+        // This ensures connectedCallback has run and _rootEl exists
+        await customElements.whenDefined('sg-layout')
+        requestAnimationFrame(() => {
+            document.getElementById('main-layout').setAttribute('layout', JSON.stringify({
+                type     : 'row',
+                sizes    : [0.2, 0.8],
+                children : [
+                    { type: 'stack', tabs: [{ type: 'tab', tag: 'session-list', title: 'Sessions' }], activeTab: 0 },
+                    { type: 'stack', tabs: [{ type: 'tab', tag: 'chat-panel',   title: 'Chat'     }], activeTab: 0 }
+                ]
+            }))
+        })
+    </script>
 </body>
 </html>
