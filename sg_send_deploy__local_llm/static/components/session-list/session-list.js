@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// Session List — sidebar with saved conversations
+// Session List — sidebar with saved conversations, opens chats as sg-layout tabs
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class SessionList extends HTMLElement {
@@ -10,6 +10,14 @@ class SessionList extends HTMLElement {
         this.loadSessions()
 
         document.addEventListener('session-saved', () => this.loadSessions())
+    }
+
+    get layout() {
+        return document.getElementById('main-layout')
+    }
+
+    get chatStackId() {
+        return window.__chatStackId
     }
 
     render() {
@@ -23,11 +31,69 @@ class SessionList extends HTMLElement {
             </div>`
 
         this.querySelector('#btn-new-chat').addEventListener('click', () => {
-            this.activeSession = null
-            this.renderItems()
-            const chatPanel = document.querySelector('chat-panel')
-            if (chatPanel) chatPanel.newChat()
+            this.openNewChatTab()
         })
+    }
+
+    openNewChatTab() {
+        const layout  = this.layout
+        const stackId = this.chatStackId
+        if (!layout || !stackId) return
+
+        layout.addTabToStack(stackId, {
+            tag   : 'chat-panel',
+            title : 'New Chat'
+        }, true)
+    }
+
+    openSessionInTab(session) {
+        const layout  = this.layout
+        const stackId = this.chatStackId
+        if (!layout || !stackId) return
+
+        // Check if this session is already open in a tab
+        const tree      = layout.getLayout()
+        const chatStack = this._findStack(tree, stackId)
+        if (chatStack) {
+            for (let i = 0; i < chatStack.tabs.length; i++) {
+                const tab = chatStack.tabs[i]
+                if (tab.state && tab.state.sessionId === session.id) {
+                    // Tab already open — switch to it
+                    layout._switchTab(
+                        layout._findNodeById(layout._tree, stackId),
+                        i
+                    )
+                    layout._renderTree()
+                    layout._mountAllTabs()
+                    return
+                }
+            }
+        }
+
+        // Create a new tab with the session data passed via state
+        const tabId = layout.addTabToStack(stackId, {
+            tag   : 'chat-panel',
+            title : session.title || 'Chat',
+            state : { sessionId: session.id }
+        }, true)
+    }
+
+    _findStack(node, id) {
+        if (!node) return null
+        if (node.id === id) return node
+        if (node.children) {
+            for (const child of node.children) {
+                const found = this._findStack(child, id)
+                if (found) return found
+            }
+        }
+        if (node.tabs) {
+            for (const tab of node.tabs) {
+                const found = this._findStack(tab, id)
+                if (found) return found
+            }
+        }
+        return null
     }
 
     async loadSessions() {
@@ -45,9 +111,9 @@ class SessionList extends HTMLElement {
 
         container.innerHTML = this.sessions.map(s => `
             <div class="session-item ${s.id === this.activeSession ? 'active' : ''}" data-id="${s.id}">
-                <span class="delete-btn" data-delete="${s.id}">×</span>
+                <span class="delete-btn" data-delete="${s.id}">&times;</span>
                 <div class="title">${this.escapeHtml(s.title || 'Untitled')}</div>
-                <div class="meta">${s.model} · ${s.message_count} msgs</div>
+                <div class="meta">${s.model} &middot; ${s.message_count} msgs</div>
             </div>
         `).join('')
 
@@ -70,9 +136,8 @@ class SessionList extends HTMLElement {
         this.activeSession = id
         this.renderItems()
         try {
-            const session   = await llmAPI.getSession(id)
-            const chatPanel = document.querySelector('chat-panel')
-            if (chatPanel) chatPanel.loadSession(session)
+            const session = await llmAPI.getSession(id)
+            this.openSessionInTab(session)
         } catch (e) {
             console.warn('Could not load session:', e)
         }
@@ -84,8 +149,6 @@ class SessionList extends HTMLElement {
             this.sessions = this.sessions.filter(s => s.id !== id)
             if (this.activeSession === id) {
                 this.activeSession = null
-                const chatPanel = document.querySelector('chat-panel')
-                if (chatPanel) chatPanel.newChat()
             }
             this.renderItems()
         } catch (e) {

@@ -1,15 +1,47 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // Chat Panel — main chat interface with streaming responses
+// Each instance is independent — supports multiple tabs via sg-layout
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class ChatPanel extends HTMLElement {
     connectedCallback() {
-        this.currentModel    = 'gemma3:4b'
-        this.messages        = []
+        this.currentModel     = 'gemma3:4b'
+        this.messages         = []
         this.currentSessionId = null
-        this.isStreaming      = false
+        this.isStreaming       = false
         this.render()
         this.loadModels()
+
+        // If sg-layout passed state with a sessionId, load that session
+        if (this._pendingState && this._pendingState.sessionId) {
+            this._loadSessionById(this._pendingState.sessionId)
+            this._pendingState = null
+        }
+    }
+
+    // sg-layout calls this before connectedCallback when creating from state
+    setLayoutState(state) {
+        if (state && state.sessionId) {
+            if (this.isConnected) {
+                this._loadSessionById(state.sessionId)
+            } else {
+                this._pendingState = state
+            }
+        }
+    }
+
+    // sg-layout calls this to serialize tab state
+    getLayoutState() {
+        return { sessionId: this.currentSessionId }
+    }
+
+    async _loadSessionById(sessionId) {
+        try {
+            const session = await llmAPI.getSession(sessionId)
+            this.loadSession(session)
+        } catch (e) {
+            console.warn('Could not load session:', e)
+        }
     }
 
     render() {
@@ -137,9 +169,24 @@ class ChatPanel extends HTMLElement {
     async autoSaveSession() {
         if (this.messages.length === 0) return
         try {
-            const title = this.messages[0].content.substring(0, 50)
+            const title  = this.messages[0].content.substring(0, 50)
             const result = await llmAPI.saveSession(this.currentModel, title, this.messages)
             this.currentSessionId = result.id
+
+            // Update the tab title in sg-layout
+            if (this.dataset.panelId && this._sgLayoutRef) {
+                this.dataset.panelTitle = title
+                const layout = this._sgLayoutRef
+                let tabNode  = null
+                layout._walkTabs(layout._tree, (t) => {
+                    if (t.id === this.dataset.panelId) tabNode = t
+                })
+                if (tabNode) {
+                    tabNode.title = title
+                    layout._updateStackTitle(tabNode)
+                }
+            }
+
             this.dispatchEvent(new CustomEvent('session-saved', { bubbles: true }))
         } catch (e) {
             console.warn('Could not save session:', e)
