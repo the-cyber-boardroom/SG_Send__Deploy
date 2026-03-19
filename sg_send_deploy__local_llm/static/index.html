@@ -6,12 +6,11 @@
     <title>SG Local LLM</title>
     <link rel="stylesheet" href="/static/core/sg-layout/v0.1.0/sg-layout.css">
     <link rel="stylesheet" href="/static/css/chat.css">
-    <script src="/static/core/sg-layout/v0.1.0/sg-layout-events.js"></script>
-    <script src="/static/core/sg-layout/v0.1.0/sg-layout.js"></script>
+    <script type="module" src="/static/core/sg-layout/v0.1.0/sg-layout.js"></script>
     <script src="/static/js/llm-api.js"></script>
-    <script src="/static/components/session-list/session-list.js"></script>
-    <script src="/static/components/chat-panel/chat-panel.js"></script>
-    <script src="/static/components/model-picker/model-picker.js"></script>
+    <script defer src="/static/components/session-list/session-list.js"></script>
+    <script defer src="/static/components/chat-panel/chat-panel.js"></script>
+    <script defer src="/static/components/model-picker/model-picker.js"></script>
     <style>
         html, body { margin: 0; padding: 0; height: 100vh; overflow: hidden; }
         #app       { height: 100vh; display: flex; flex-direction: column; }
