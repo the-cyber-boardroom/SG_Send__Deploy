@@ -15,31 +15,32 @@ class LlmAPI {
         return response
     }
 
-    async chatStream(model, messages) {                                     // POST /api/chat — returns ReadableStream
+    async chatStream(model, messages, signal) {                              // POST /api/chat — returns ReadableStream
         const response = await this.fetch('/api/chat/chat', {
             method : 'POST',
-            body   : JSON.stringify({ model, messages, stream: true })
+            body   : JSON.stringify({ model, messages, stream: true }),
+            signal
         })
         return response
     }
 
-    async listModels() {                                                    // GET /api/models
+    async listModels() {                                                     // GET /api/models
         const response = await this.fetch('/api/models/models')
         const data     = await response.json()
         return data.models || []
     }
 
-    async listSessions() {                                                  // GET /api/sessions
+    async listSessions() {                                                   // GET /api/sessions
         const response = await this.fetch('/api/sessions/sessions')
         return response.json()
     }
 
-    async getSession(id) {                                                  // GET /api/sessions/{id}
+    async getSession(id) {                                                   // GET /api/sessions/{id}
         const response = await this.fetch(`/api/sessions/sessions/${id}`)
         return response.json()
     }
 
-    async saveSession(model, title, messages) {                             // POST /api/sessions
+    async saveSession(model, title, messages) {                              // POST /api/sessions
         const response = await this.fetch('/api/sessions/create', {
             method : 'POST',
             body   : JSON.stringify({ model, title, messages })
@@ -47,7 +48,15 @@ class LlmAPI {
         return response.json()
     }
 
-    async deleteSession(id) {                                               // DELETE /api/sessions/{id}
+    async updateSession(id, model, title, messages) {                        // PUT /api/sessions/{id}
+        const response = await this.fetch(`/api/sessions/update/${id}`, {
+            method : 'PUT',
+            body   : JSON.stringify({ model, title, messages })
+        })
+        return response.json()
+    }
+
+    async deleteSession(id) {                                                // DELETE /api/sessions/{id}
         const response = await this.fetch(`/api/sessions/delete/${id}`, {
             method: 'DELETE'
         })
